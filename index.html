@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MT Sense – วัดและควบคุม</title>
+<meta name="theme-color" content="#0E6F7E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MT Sense">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF0F1; --surface:#FFFFFF; --surface-2:#F4F8F8; --ink:#132429; --ink-2:#4B6066; --line:#CFDCDF;
+  --accent:#0E6F7E; --accent-ink:#FFFFFF; --trace:#0E6F7E; --peak:#B9770C; --grid:#E3ECEE;
+  --pass:#2E7D32; --fail:#C62828; --busy:#1565C0; --warn:#B45309; --live:#1F9D55; --idle:#8A9A9E;
+  --font:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D191C; --surface:#13242A; --surface-2:#0F1F23; --ink:#DCE8EA; --ink-2:#93A9AE; --line:#24393F;
+    --accent:#3BB3C3; --accent-ink:#04252A; --trace:#4CC3D2; --peak:#F0B04A; --grid:#1B2E33;
+    --pass:#43A047; --fail:#E53935; --busy:#5C9DFF; --warn:#F59E0B; --live:#34D399; --idle:#5D7277;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D191C; --surface:#13242A; --surface-2:#0F1F23; --ink:#DCE8EA; --ink-2:#93A9AE; --line:#24393F;
+  --accent:#3BB3C3; --accent-ink:#04252A; --trace:#4CC3D2; --peak:#F0B04A; --grid:#1B2E33;
+  --pass:#43A047; --fail:#E53935; --busy:#5C9DFF; --warn:#F59E0B; --live:#34D399; --idle:#5D7277;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-row{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 20px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand{align-items:center}
+.brand .logo{width:32px;height:32px;flex:none;align-self:center;border-radius:7px}
+.brand b{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.brand span{color:var(--ink-2);font-size:13px}
+.conn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:4px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-size:13px;white-space:nowrap}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--idle);flex:none}
+.dot.on{background:var(--live)}
+.clock{font-size:13px;color:var(--ink-2)}
+.tabs{max-width:1240px;margin:0 auto;display:flex;gap:4px;padding:0 20px;overflow-x:auto}
+.tabs a{padding:8px 14px 10px;color:var(--ink-2);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* Buttons */
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500;line-height:1.3}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn.danger{color:var(--fail)}
+
+main{max-width:1240px;margin:0 auto;padding:20px}
+.view[hidden]{display:none}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+h2{font-size:17px;font-weight:600;margin:0 0 12px}
+h3{font-size:15px;font-weight:600;margin:0 0 8px}
+.muted{color:var(--ink-2)}
+.hint{font-size:13px;color:var(--ink-2);margin:6px 0 0}
+
+/* Measure layout */
+.measure{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.sample{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+label.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)}
+.field input,.field select{border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:8px 10px;font-size:15px;color:var(--ink);min-width:0;width:100%}
+.chart-wrap{position:relative;height:clamp(280px,48vh,460px)}
+.chart-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+.chart-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;padding:3px 8px;border-radius:5px;transform:translate(-50%,-130%);white-space:nowrap;display:none}
+.chart-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-top:8px}
+
+.readout{display:flex;flex-direction:column;gap:14px}
+.conc{padding:18px 18px 14px}
+.conc .lbl{font-size:14px;color:var(--ink-2)}
+.conc .val{font-size:64px;line-height:1;font-weight:600;letter-spacing:-.02em;margin:8px 0 4px}
+.conc .unit{font-size:14px;color:var(--ink-2)}
+.verdict{margin-top:14px;border-radius:8px;padding:12px;text-align:center;font-size:28px;font-weight:700;letter-spacing:.04em;color:#fff;min-height:62px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px dashed var(--line)}
+.verdict.pass{background:var(--pass);border-color:var(--pass)}
+.verdict.fail{background:var(--fail);border-color:var(--fail)}
+.verdict.empty{color:var(--ink-2);font-size:14px;font-weight:400;letter-spacing:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--ink-2)}
+.kv dd{margin:0;text-align:right}
+.start{display:flex;align-items:center;gap:12px}
+.start .btn{flex:1;font-size:18px;padding:14px;border-radius:10px}
+.led{width:22px;height:22px;border-radius:50%;background:var(--idle);flex:none;box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
+.led.green{background:var(--live)}
+.led.red{background:var(--fail)}
+.status{font-size:14px;min-height:1.6em;white-space:pre-line}
+.tone-busy{color:var(--busy)} .tone-ok{color:var(--pass)} .tone-warn{color:var(--warn)} .tone-err{color:var(--fail)}
+
+/* Settings */
+.setup{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;align-items:start}
+.scroll-x{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:13px;font-weight:500;color:var(--ink-2)}
+td input{width:100%;min-width:80px;border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:6px 8px;color:var(--ink)}
+td input.bad{border-color:var(--fail)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.stack{display:flex;flex-direction:column;gap:20px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-top:10px}
+.check input{margin-top:4px}
+
+/* Records */
+.records{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;align-items:start}
+.filelist{list-style:none;margin:10px 0 0;padding:0;max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.filelist li button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 10px;cursor:pointer;font-size:13px;word-break:break-all}
+.filelist li:last-child button{border-bottom:0}
+.filelist li button[aria-pressed="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:0 6px;border-radius:4px;color:#fff;margin-left:4px}
+.tag.pass{background:var(--pass)} .tag.fail{background:var(--fail)}
+.details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 16px;margin:0 0 14px}
+.details div{border-left:2px solid var(--line);padding-left:10px}
+.details dt{font-size:12px;color:var(--ink-2)}
+.details dd{margin:0;font-weight:500;word-break:break-word}
+
+/* Log */
+.log{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;height:60vh;overflow:auto;padding:10px 12px;white-space:pre-wrap;word-break:break-all}
+.log .tx{color:var(--accent)} .log .sys{color:var(--warn)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-size:14px;z-index:20;max-width:90vw;display:none}
+
+@media (max-width:980px){
+  .measure,.setup,.records{grid-template-columns:minmax(0,1fr)}
+  .sample{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  main{padding:14px}
+  .top-row{padding:8px 14px}
+  .tabs{padding:0 10px}
+  .conc .val{font-size:52px}
+  .details{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row">
+    <div class="brand"><img class="logo" src="data:image/png;base64,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" alt=""><b>MT Sense</b><span id="brandId">MT_ID01</span></div>
+    <div class="conn">
+      <span class="pill" id="connPill"><span class="dot" id="connDot"></span><span id="connText">ยังไม่เชื่อมต่อ</span></span>
+      <button class="btn small" id="btnSerial" title="ต่อสาย USB เข้ากับบอร์ด ADuCM355 โดยตรง">USB Serial</button>
+      <button class="btn small" id="btnBle" title="เชื่อมต่อเครื่อง MT Sense ผ่าน Bluetooth">Bluetooth</button>
+      <button class="btn small" id="btnDemo" title="จำลองการวัดโดยไม่ต้องมีเครื่อง">โหมดจำลอง</button>
+      <button class="btn small danger" id="btnDisconnect" hidden>ตัดการเชื่อมต่อ</button>
+    </div>
+    <span class="clock num" id="clock">--/--/---- --:--:--</span>
+  </div>
+  <nav class="tabs" aria-label="เมนู">
+    <a href="#measure" data-view="measure">วัดตัวอย่าง</a>
+    <a href="#setup" data-view="setup">ตั้งค่าเครื่อง</a>
+    <a href="#records" data-view="records">ข้อมูลที่บันทึก</a>
+    <a href="#log" data-view="log">Log การสื่อสาร</a>
+  </nav>
+</header>
+
+<main>
+<!-- ================= MEASURE ================= -->
+<section class="view" id="view-measure">
+  <div class="measure">
+    <div class="panel">
+      <div class="sample">
+        <label class="field">ลูกค้า (Customer)<input id="inCust" placeholder="Customer" maxlength="40" autocomplete="off"></label>
+        <label class="field">Lot No.<input id="inLot" placeholder="Lot. NO." maxlength="40" autocomplete="off"></label>
+        <label class="field">ชื่อตัวอย่าง<input id="inName" placeholder="Sample Name" maxlength="40" autocomplete="off"></label>
+        <label class="field">Sensor<select id="inSensor"></select></label>
+      </div>
+      <div class="chart-wrap" id="liveWrap"><canvas id="liveChart" aria-label="กราฟกระแส-ศักย์ไฟฟ้าแบบเรียลไทม์" role="img"></canvas><div class="chart-tip" id="liveTip"></div></div>
+      <div class="chart-meta"><span id="liveCount" class="num">0 จุด</span><span id="liveRange" class="num">SWV  −400 ถึง 800 mV</span></div>
+    </div>
+
+    <div class="readout">
+      <div class="panel conc">
+        <div class="lbl">ความเข้มข้น (ppb) – <span id="concSensor">SEM</span></div>
+        <div class="val num" id="concVal">0.0</div>
+        <div class="unit">conc = [(I<sub>m</sub> − I<sub>0</sub>) − I<sub>ref</sub>] / m</div>
+        <div class="verdict empty" id="verdict">ยังไม่มีผลการวัด</div>
+      </div>
+      <div class="panel">
+        <dl class="kv num">
+          <dt>I<sub>m</sub> สูงสุด (µA)</dt><dd id="kvIm">–</dd>
+          <dt>I<sub>0</sub> (REF)</dt><dd id="kvI0">–</dd>
+          <dt>I<sub>ref</sub></dt><dd id="kvIref">–</dd>
+          <dt>m</dt><dd id="kvM">–</dd>
+          <dt>เกณฑ์ผ่าน</dt><dd id="kvTh">–</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="start">
+          <span class="led" id="led" title="สถานะรับข้อมูล"></span>
+          <button class="btn primary" id="btnStart" disabled>START</button>
+        </div>
+        <p class="status" id="status4" aria-live="polite">เชื่อมต่อเครื่องก่อน แล้วกด START</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section class="view" id="view-setup" hidden>
+  <div class="setup">
+    <div class="panel">
+      <h2>ค่าคาลิเบรตของแต่ละ Sensor</h2>
+      <div class="scroll-x">
+        <table>
+          <thead><tr><th>Sensor</th><th>m</th><th>I<sub>ref</sub> (i)</th><th>I<sub>0</sub> (REF)</th><th></th></tr></thead>
+          <tbody id="senRows"></tbody>
+        </table>
+      </div>
+      <p class="hint">กด REF เพื่อวัดสารละลายอ้างอิงของ Sensor นั้น ค่ากระแสสูงสุดจะถูกเก็บเป็น I<sub>0</sub> และบันทึกทันที</p>
+      <div class="grid2" style="margin-top:14px">
+        <label class="field">เกณฑ์ผ่าน (ppb) – ต่ำกว่าค่านี้ = PASS<input id="inPass" inputmode="decimal"></label>
+        <label class="field">Gain (RTIA ของ ADuCM355)<select id="inGain"></select></label>
+      </div>
+      <p class="status" id="status7" aria-live="polite"></p>
+      <div class="row-actions">
+        <button class="btn primary" id="btnCfgSave">บันทึกค่า</button>
+        <button class="btn" id="btnCfgCancel">ยกเลิกการแก้ไข</button>
+        <button class="btn" id="btnCfgExport">ดาวน์โหลด NF_default.cfg</button>
+        <label class="btn" for="cfgFile">นำเข้า .cfg</label>
+        <input type="file" id="cfgFile" accept=".cfg,.txt" hidden>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <h2>พารามิเตอร์การสแกน (SWV)</h2>
+        <div class="grid2">
+          <label class="field">Vf – ศักย์สุดท้าย (mV)<input id="inVf" inputmode="numeric"></label>
+          <label class="field">Vi – ศักย์เริ่มสแกน (mV)<input id="inVi" inputmode="numeric"></label>
+          <label class="field">เริ่มเก็บข้อมูลที่ (mV)<input id="inStore" inputmode="numeric"></label>
+          <label class="field">SH – Step (mV)<input id="inSH" inputmode="decimal"></label>
+          <label class="field">F – ความถี่ (Hz)<input id="inF" inputmode="decimal"></label>
+          <label class="field">A – Amplitude (mV)<input id="inA" inputmode="numeric"></label>
+        </div>
+        <p class="hint">ค่าเริ่มต้นตรงกับเฟิร์มแวร์: Vf 800, Vi −500, เก็บตั้งแต่ −400, SH 4, F 5, A 25, G3</p>
+        <div class="row-actions"><button class="btn small" id="btnScanDefault">คืนค่าเริ่มต้น</button></div>
+      </div>
+      <div class="panel">
+        <h2>เครื่องและการบันทึกไฟล์</h2>
+        <label class="field">Device ID<input id="inDevId" maxlength="15"></label>
+        <label class="field" style="margin-top:12px">Google Apps Script URL (อัปโหลด Google Drive)<input id="inDrive" placeholder="https://script.google.com/macros/s/…/exec"></label>
+        <label class="check"><input type="checkbox" id="inAutoDrive"> อัปโหลดขึ้น Google Drive อัตโนมัติหลังวัดเสร็จ</label>
+        <label class="check"><input type="checkbox" id="inAutoDl"> ดาวน์โหลดไฟล์ CSV อัตโนมัติหลังวัดเสร็จ</label>
+        <label class="field" style="margin-top:12px">ธีม<select id="inTheme"><option value="">ตามระบบ</option><option value="light">สว่าง</option><option value="dark">มืด</option></select></label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RECORDS ================= -->
+<section class="view" id="view-records" hidden>
+  <div class="records">
+    <div class="panel">
+      <h2>เลือกไฟล์ข้อมูล</h2>
+      <label class="field">โฟลเดอร์ (วันที่)<select id="selFolder"></select></label>
+      <ul class="filelist" id="fileList"></ul>
+      <div class="row-actions">
+        <label class="btn small" for="csvFiles">เปิดไฟล์ CSV จาก SD Card</label>
+        <input type="file" id="csvFiles" accept=".csv,.txt" multiple hidden>
+      </div>
+      <div class="row-actions" id="usbDriveRow" hidden>
+        <button class="btn small" id="btnUsbDrive">เปิด SD Card บน PC</button>
+      </div>
+      <p class="hint" id="usbDriveHint" hidden></p>
+      <p class="hint">ผลการวัดทุกครั้งถูกเก็บไว้ในเบราว์เซอร์นี้ (แทน SD Card) และเปิดไฟล์ .csv ที่เครื่องบันทึกไว้มาดูได้</p>
+    </div>
+    <div class="panel" id="recDetail">
+      <h2 id="recTitle">รายละเอียดข้อมูล</h2>
+      <dl class="details" id="recInfo"></dl>
+      <div class="chart-wrap" style="height:clamp(240px,40vh,380px)"><canvas id="recChart" role="img" aria-label="กราฟของไฟล์ที่เลือก"></canvas><div class="chart-tip" id="recTip"></div></div>
+      <div class="row-actions">
+        <button class="btn" id="btnRecDl" disabled>ดาวน์โหลด CSV</button>
+        <button class="btn" id="btnRecDrive" disabled>อัปโหลด Google Drive</button>
+        <button class="btn danger" id="btnRecDel" disabled>ลบ</button>
+      </div>
+      <p class="status" id="statusRec"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOG ================= -->
+<section class="view" id="view-log" hidden>
+  <div class="panel">
+    <div class="row-actions" style="margin:0 0 12px">
+      <button class="btn small" id="btnLogClear">ล้าง Log</button>
+      <button class="btn small" id="btnLogDl">ดาวน์โหลด Log</button>
+      <label class="check" style="margin:0 0 0 8px"><input type="checkbox" id="inLogData"> แสดงบรรทัดข้อมูลทุกจุด</label>
+    </div>
+    <div class="log" id="log" aria-live="off"></div>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+ * ค่าคงที่ (ตรงกับเฟิร์มแวร์ MT_Sense_Ver1.ino)
+ * ===================================================================*/
+const SENSORS = ['SEM','AOZ','AMOZ','AHD','DNSH'];
+const GAIN_RTIA_OHM = [0,200,1000,2000,3000,4000,6000,8000,10000,12000,16000,20000,24000,30000,32000,40000,48000,64000,85000,96000,100000,120000,128000,160000,196000,256000,512000];
+const GAIN_DEFAULT = 3;
+const PARAM_ACK_EXPECTED = 6, PARAM_ACK_TIMEOUT_MS = 3000, PARAM_SEND_MAX_TRY = 3;
+// เวลารอสแกนจบ: จำนวนขั้น x (1/F) + เผื่อ 50 วินาที (326 ขั้นที่ 5 Hz ≈ 115 วินาที)
+const scanTimeoutMs = () => { const sc = cfg.scan; const n = Math.round(Math.abs(sc.vf - sc.vi) / (sc.sh || 4)) + 1; return n * 1000 / (sc.f || 5) + 50000; };
+const STORE_VMIN_TOL_MV = 0.5;
+const BLE_SERVICE = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const BLE_CHAR    = 'bea565e1-9154-4b45-9117-3143f60afb05';
+const DEFAULT_DRIVE_URL = 'https://script.google.com/macros/s/AKfycbzE40zZVxi7SpW0_nJcShtTkZbSf9VxlAhuGG5BWbo19imY9KFubNvyyLpwTybkc-0Yig/exec';
+const SCAN_DEFAULT = {vf:800, vi:-500, store:-400, sh:4, f:5, a:25};
+const CFG_DEFAULT = {
+  m:[3.2057,7.7831,23.749,23.09,2.000],
+  i:[4.2387,8.0088,0.19,16.064,1.50],
+  r:[0,0,0,0,0],
+  p:50, g:GAIN_DEFAULT,
+  scan:{...SCAN_DEFAULT},
+  deviceId:'MT_ID01', driveUrl:DEFAULT_DRIVE_URL, autoDrive:false, autoDl:false, theme:''
+};
+const gainLabel = g => { if (!(g>=0&&g<=26)) g=GAIN_DEFAULT; const o=GAIN_RTIA_OHM[g]; return o===0?`G${g} - OPEN`:o<1000?`G${g} - ${o}R`:`G${g} - ${o/1000}K`; };
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const fmtG = v => { const s = Number(v).toPrecision(6); return String(parseFloat(s)); };
+
+/* =====================================================================
+ * Storage (เก็บในเบราว์เซอร์แทน SD Card / NVS)
+ * ===================================================================*/
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true;}catch(e){ return false;} }
+};
+let cfg = Object.assign(structuredClone(CFG_DEFAULT), store.get('mts.cfg',{}));
+cfg.scan = Object.assign({...SCAN_DEFAULT}, cfg.scan||{});
+const saveCfg = () => store.set('mts.cfg', cfg);
+let records = store.get('mts.records', []);
+const saveRecords = () => store.set('mts.records', records);
+
+/* =====================================================================
+ * Log
+ * ===================================================================*/
+const logEl = $('log'); const logLines = []; let logPending = [];
+function log(kind, text){
+  const t = new Date(); const ts = t.toTimeString().slice(0,8);
+  const line = {kind, text:`[${ts}] ${kind==='tx'?'TX >':kind==='rx'?'RX <':'--'} ${text}`};
+  logLines.push(line.text); if (logLines.length>4000) logLines.shift();
+  logPending.push(line);
+  if (logPending.length===1) requestAnimationFrame(flushLog);
+}
+function flushLog(){
+  const frag = document.createDocumentFragment();
+  for (const l of logPending){ const d=document.createElement('div'); d.className=l.kind; d.textContent=l.text; frag.appendChild(d); }
+  logPending = [];
+  const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 30;
+  logEl.appendChild(frag);
+  while (logEl.childElementCount>2000) logEl.firstChild.remove();
+  if (atBottom) logEl.scrollTop = logEl.scrollHeight;
+}
+
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>t.style.display='none',3500); }
+
+/* =====================================================================
+ * Transports: USB Serial (ADuCM355 ตรง), Bluetooth (เครื่อง MT Sense), Demo
+ * ===================================================================*/
+class LineSplitter{
+  constructor(onLine, onEot){ this.buf=''; this.onLine=onLine; this.onEot=onEot; }
+  feed(text){
+    for (const ch of text){
+      if (ch==='\n'){ const l=this.buf; this.buf=''; this.onLine(l); }
+      else if (ch==='\x04'){ if (this.buf.trim()){ const l=this.buf; this.buf=''; this.onLine(l);} else this.buf=''; this.onEot(); }
+      else if (ch!=='\r'){ if (this.buf.length<400) this.buf+=ch; }
+    }
+  }
+}
+
+class SerialTransport{
+  constructor(h){ this.h=h; this.kind='serial'; this.label='USB Serial'; this.enc=new TextEncoder(); }
+  async connect(){
+    this.port = await navigator.serial.requestPort();
+    await this.port.open({baudRate:115200});
+    this.split = new LineSplitter(l=>this.h.onLine(l), ()=>this.h.onEot());
+    this.alive = true; this.loop();
+    this.port.addEventListener?.('disconnect', ()=>this.h.onClose());
+  }
+  async loop(){
+    const dec = new TextDecoder();
+    while (this.alive && this.port.readable){
+      this.reader = this.port.readable.getReader();
+      try{
+        for(;;){ const {value,done} = await this.reader.read(); if (done) break; this.h.onRaw(); this.split.feed(dec.decode(value,{stream:true})); }
+      }catch(e){ if (this.alive) log('sys','อ่านข้อมูลผิดพลาด: '+e.message); }
+      finally{ try{this.reader.releaseLock();}catch(e){} }
+    }
+    if (this.alive){ this.alive=false; this.h.onClose(); }
+  }
+  async writeLine(s){
+    const w = this.port.writable.getWriter();
+    try{ await w.write(this.enc.encode(s+'\r\n')); } finally { w.releaseLock(); }
+  }
+  async disconnect(){ this.alive=false; try{ await this.reader?.cancel(); }catch(e){} try{ await this.port.close(); }catch(e){} }
+}
+
+class BleTransport{
+  constructor(h){ this.h=h; this.kind='ble'; this.label='Bluetooth'; this.enc=new TextEncoder(); }
+  async connect(){
+    this.dev = await navigator.bluetooth.requestDevice({ filters:[{services:[BLE_SERVICE]},{namePrefix:'MT'},{namePrefix:'NF'}], optionalServices:[BLE_SERVICE] });
+    this.dev.addEventListener('gattserverdisconnected', ()=>{ if (this.alive){ this.alive=false; this.h.onClose(); } });
+    let srv;
+    for (let k = 1; k <= 3; k++){
+      try{ srv = await this.dev.gatt.connect(); break; }
+      catch(e){ if (k === 3) throw e; log('sys', `เชื่อมต่อ Bluetooth ไม่สำเร็จ ลองใหม่ (${k}/3)`); await sleep(1000); }
+    }
+    const svc = await srv.getPrimaryService(BLE_SERVICE);
+    this.ch = await svc.getCharacteristic(BLE_CHAR);
+    this.split = new LineSplitter(l=>this.h.onLine(l), ()=>this.h.onEot());
+    const dec = new TextDecoder();
+    this.ch.addEventListener('characteristicvaluechanged', ev=>{
+      const bytes = new Uint8Array(ev.target.value.buffer);
+      this.h.onRaw();
+      if (bytes.length===1 && bytes[0]===4){ this.h.onEot(); return; }
+      this.split.feed(dec.decode(bytes,{stream:true}));
+    });
+    await this.ch.startNotifications();
+    this.alive = true;
+    this.label = 'Bluetooth: '+(this.dev.name||'MT Sense');
+  }
+  async writeLine(s){ await this.ch.writeValue(this.enc.encode(s)); }
+  async disconnect(){ this.alive=false; try{ this.dev?.gatt?.disconnect(); }catch(e){} }
+}
+
+/* จำลองบอร์ด ADuCM355: ตอบ OK ทุกพารามิเตอร์ และส่งข้อมูล SWV เมื่อได้รับ "0" */
+class DemoTransport{
+  constructor(h){ this.h=h; this.kind='demo'; this.label='โหมดจำลอง'; this.p={vf:800,vi:-500,sh:4}; }
+  async connect(){ this.alive=true; setTimeout(()=>this.emit('ADuCM355 demo ready'),100); }
+  emit(l){ if (!this.alive) return; this.h.onRaw(); this.h.onLine(l); }
+  async writeLine(s){
+    const c = s.trim(); if (!c) return;
+    const m = c.match(/^(Vf|Vi|SH|F|A|G)(-?[\d.]+)$/);
+    if (m){
+      const v = parseFloat(m[2]);
+      if (m[1]==='Vf') this.p.vf=v; if (m[1]==='Vi') this.p.vi=v; if (m[1]==='SH') this.p.sh=v||4;
+      setTimeout(()=>this.emit(m[1]==='G'?`OK RTIA,G${v}=${gainLabel(v).split(' - ')[1]}`:`OK ${m[1]}=${m[2]}`), 60+Math.random()*120);
+    } else if (c==='0'){ this.run(); }
+    else setTimeout(()=>this.emit(`Err: unknown command '${c}'`),50);
+  }
+  run(){
+    clearInterval(this.timer);
+    const {vf,vi,sh} = this.p; const peakE = 60+Math.random()*80, h = 6+Math.random()*30, w = 55+Math.random()*20;
+    let e = vi, zeros = 6+Math.floor(Math.random()*8);
+    this.timer = setInterval(()=>{
+      if (!this.alive){ clearInterval(this.timer); return; }
+      if (zeros>0){ zeros--; this.emit(`${e.toFixed(1)},0.0000`); e+=sh; return; }
+      if (e>vf){ clearInterval(this.timer); this.emit('Scan Done'); return; }
+      const base = 0.9 + 0.0012*(e-vi);
+      const I = base + h*Math.exp(-((e-peakE)**2)/(2*w*w)) + (Math.random()-.5)*0.12;
+      this.emit(`${e.toFixed(1)},-${I.toFixed(4)}`); e+=sh;
+    }, 18);
+  }
+  async disconnect(){ this.alive=false; clearInterval(this.timer); }
+}
+
+/* =====================================================================
+ * State
+ * ===================================================================*/
+const S = {
+  tr:null, busy:false, ref:false, refIdx:0,
+  points:[], maxV:-1e9, seenNZ:false, imLast:0, hasResult:false,
+  mode:'idle', ackCount:0, lastRx:0, busyTimer:null, lastE:null,
+  lastSaved:null, sensorAtScan:0
+};
+const handlers = {
+  onRaw(){ S.lastRx = performance.now(); },
+  onLine(l){ handleLine(l); },
+  onEot(){ log('rx','<EOT 0x04>'); if (S.busy && S.mode==='scan') scanDone(); },
+  onClose(){ log('sys','การเชื่อมต่อถูกตัด'); setConnected(null); }
+};
+
+/* =====================================================================
+ * UART RX handling (เหมือน handleUartRx + prepare_scan_point)
+ * ===================================================================*/
+const isNumericCsvLine = l => l.length>0 && /^[\d.,+\-\s]+$/.test(l) && /\d/.test(l);
+
+function prepareScanPoint(line){
+  const ci = line.indexOf(','); if (ci<0) return null;
+  const e = parseFloat(line.slice(0,ci)); const iRaw = parseFloat(line.slice(ci+1));
+  if (!isFinite(e) || !isFinite(iRaw)) return null;
+  if (e < cfg.scan.store - STORE_VMIN_TOL_MV) return null;          // ทิ้งจุดที่ E < -400 mV
+  if (!S.seenNZ){ if (Math.abs(iRaw)<1e-6) return null; S.seenNZ=true; }  // ทิ้ง 0.0000 ช่วง settling
+  return {e, i:Math.abs(iRaw)};                                     // เก็บ I เป็นค่าบวกเสมอ
+}
+
+/* ---- พอร์ต USB ของ ESP32 (เครื่อง MT Sense) ----
+ * พอร์ตนี้ส่งเป็น log ขึ้นต้นด้วย [TAG] เช่น "[UART1 RX] -399.69,-0.0173"
+ * จึงตัดคำนำหน้าออกก่อนแล้วประมวลผลเหมือนข้อมูลจาก ADuCM355 */
+const ESP_DATA_PREFIX = /^\[(UART1 RX|PARAM RX)\]\s?/;
+function updateUsbDrive(line){
+  if (/\] ON/.test(line)){ S.usbDrive = true; toast('เปิด SD Card บน PC แล้ว รอไดรฟ์ขึ้นใน File Explorer'); }
+  else if (/\] OFF/.test(line)){ S.usbDrive = false; toast(/FAIL/.test(line) ? 'ปิดไดรฟ์แล้ว แต่เครื่อง mount SD Card ใหม่ไม่สำเร็จ' : 'ปิดไดรฟ์แล้ว เครื่องกลับมาใช้ SD Card ตามปกติ'); }
+  else if (/FAIL measuring/.test(line)) toast('เครื่องกำลังวัดอยู่ ลองใหม่หลังวัดเสร็จ');
+  else if (/FAIL/.test(line)) toast('ไม่พบ SD Card ในเครื่อง');
+  renderUsbDrive();
+}
+function renderUsbDrive(){
+  $('usbDriveRow').hidden = !S.esp32; $('usbDriveHint').hidden = !S.esp32;
+  $('btnUsbDrive').textContent = S.usbDrive ? 'ปิดไดรฟ์ (กด Eject บน PC ก่อน)' : 'เปิด SD Card บน PC';
+  $('usbDriveHint').textContent = S.usbDrive
+    ? 'กำลังเปิดเป็นไดรฟ์บน PC ระหว่างนี้เครื่องจะไม่บันทึกผลลง SD Card'
+    : 'ให้ PC มองเห็น SD Card ในเครื่องเป็นไดรฟ์ (ต้องใช้เฟิร์มแวร์ที่มี UsbDriveMode.h)';
+}
+function setEsp32Mode(){
+  S.esp32 = true; renderUsbDrive();
+  S.tr.label = 'USB: เครื่อง MT Sense';
+  $('connText').textContent = S.tr.label;
+  log('sys', 'พบพอร์ต USB ของ ESP32 (เครื่อง MT Sense) -> รับข้อมูลจาก log ของเครื่อง');
+  if (!S.busy) setStatus4('ต่อกับเครื่อง MT Sense ทาง USB แล้ว\nกด START ที่นี่หรือที่ตัวเครื่องก็ได้', 'ok');
+}
+function handleEspLine(line){
+  if (line.startsWith('[UART1 TX] 0')){
+    const p = S.pending || {isRef:false, idx:$('inSensor').selectedIndex};
+    if (!S.pending) setStatus4('กำลังรับข้อมูลจากเครื่อง…', 'busy');
+    beginCapture(p.isRef, p.idx);
+    return true;
+  }
+  if (line.includes('ยกเลิกรอบนี้')){
+    clearTimeout(S.awaitTimer); S.pending = null;
+    S.busy = false; S.mode = 'idle'; setLed('red'); updateStartBtn();
+    scanStatus('ADuCM355 ไม่ตอบสนอง\nลองใหม่อีกครั้ง', 'ADuCM355 ไม่ตอบสนอง ลองกด REF ใหม่', 'err');
+    S.ref = false;
+    return true;
+  }
+  const r = line.match(/^\[REF\].*\[(\d)\]\s*=\s*(-?[\d.]+)/);
+  if (r){
+    const idx = +r[1], v = parseFloat(r[2]);
+    if (S.busy && S.mode === 'scan'){ S.ref = true; S.refIdx = idx; S.refValue = v; }
+    else { cfg.r[idx] = v; saveCfg(); fillSettings(true); }
+    return true;
+  }
+  if (line.startsWith('[USBDRIVE]')){ updateUsbDrive(line); return true; }
+  if (line.startsWith('[USB] busy')){ toast('เครื่องกำลังวัดอยู่'); return true; }
+  return false;
+}
+
+function handleLine(raw){
+  let line = raw.trim();
+  if (!line) return;
+  const inner = line.replace(ESP_DATA_PREFIX, '').trim();
+  if (!isNumericCsvLine(inner) || $('inLogData').checked) log('rx', line);
+
+  if (!S.esp32 && S.tr?.kind === 'serial' && /^\[[^\]]{2,24}\]/.test(line)) setEsp32Mode();
+  if (S.esp32){
+    if (handleEspLine(line)) return;
+    line = inner;
+  }
+  const numeric = isNumericCsvLine(line);
+  if (line === 'BUSY'){
+    toast('เครื่องกำลังวัดอยู่ รอให้วัดเสร็จก่อน');
+    if (S.busy && S.points.length === 0){ clearTimeout(S.busyTimer); clearTimeout(S.noDataTimer); S.busy = false; S.mode = 'idle'; S.ref = false; updateStartBtn(); setStatus4('เครื่องกำลังวัดอยู่', 'warn'); }
+    return;
+  }
+
+  if (S.mode==='drain') return;
+  if (S.mode==='ack'){ if (line.startsWith('OK')) S.ackCount++; return; }
+
+  if (line.startsWith('Scan Done') || line.startsWith('END') || line.includes('STOP_UPLOAD_COMPLETE')){
+    if (S.busy && S.mode==='scan'){
+      // ESP32 พิมพ์บรรทัด [REF] ตามหลัง Scan Done จึงรอสักครู่ก่อนสรุปผล
+      if (S.esp32){ clearTimeout(S.doneTimer); S.doneTimer = setTimeout(scanDone, 500); }
+      else scanDone();
+    }
+    return;
+  }
+  if (!numeric) return;
+
+  // เครื่อง MT Sense ถูกกดวัดจากหน้าจอเครื่องเอง -> รับข้อมูลทาง Bluetooth / USB ด้วย
+  if (!S.busy && (S.tr?.kind==='ble' || S.esp32)){ beginCapture(false, $('inSensor').selectedIndex); setStatus4('กำลังรับข้อมูลจากเครื่อง…','busy'); }
+  if (!S.busy || S.mode!=='scan') return;
+
+  const p = prepareScanPoint(line); if (!p) return;
+  // เริ่ม sweep ใหม่ (เช่นเครื่องสั่งสแกนซ้ำ) -> เริ่มเก็บใหม่
+  if (S.lastE!==null && p.e < S.lastE - 50){ S.points=[]; S.maxV=-1e9; }
+  S.lastE = p.e;
+  S.points.push(p);
+  if (p.i > S.maxV) S.maxV = p.i;
+  scheduleLive();
+}
+
+/* =====================================================================
+ * Start scan (เหมือน start_scan_with_config)
+ * ===================================================================*/
+async function send(cmd){ log('tx', cmd===''?'<newline>':cmd); await S.tr.writeLine(cmd); }
+
+function beginCapture(isRef, senIdx){
+  clearTimeout(S.awaitTimer); S.pending = null; S.refValue = null;
+  S.busy = true; S.ref = isRef; S.refIdx = senIdx; S.sensorAtScan = senIdx;
+  S.points = []; S.maxV = -1e9; S.seenNZ = false; S.lastE = null; S.mode='scan';
+  setLed('green'); updateStartBtn(); scheduleLive();
+  clearTimeout(S.busyTimer);
+  S.busyTimer = setTimeout(()=>{
+    if (!S.busy) return;
+    S.busy=false; S.mode='idle'; updateStartBtn();
+    log('sys','หมดเวลารอ "Scan Done"');
+    scanStatus('หมดเวลารอผล กด START ใหม่', 'หมดเวลารอผล กด REF ใหม่', 'err');
+    S.ref=false;
+  }, scanTimeoutMs());
+}
+
+function scanStatus(msg4, msg7, tone){ if (S.ref) setStatus7(msg7,tone); else setStatus4(msg4,tone); }
+
+async function startScan(isRef, senIdx){
+  if (!S.tr || S.busy) { if (isRef && S.busy) setStatus7('กำลังวัดอยู่ กรุณารอ…','warn'); return; }
+  $('inSensor').selectedIndex = senIdx; refreshReadout();
+  S.busy = true; S.ref = isRef; updateStartBtn(); hideVerdict();
+  scanStatus(`กำลังวัด ${SENSORS[senIdx]} …`, `กำลังวัด I0 ของ ${SENSORS[senIdx]} …`, 'busy');
+
+  try{
+    if (S.tr.kind==='ble'){
+      // เครื่อง MT Sense จัดการส่งพารามิเตอร์ให้ ADuCM355 เอง (ต้องใช้ BluetoothHandler.h ตัวใหม่)
+      for (const [k, id] of [['CUST','inCust'],['LOT','inLot'],['NAME','inName']]){
+        const v = $(id).value.trim(); if (v){ await send(`${k}:${v}`); await sleep(60); }
+      }
+      await send('SEN:' + senIdx); await sleep(60);
+      await send(isRef ? 'REF:' + senIdx : 'START_MEASURE');
+      beginCapture(isRef, senIdx);
+      const capStart = performance.now();
+      clearTimeout(S.noDataTimer);
+      S.noDataTimer = setTimeout(()=>{
+        if (!S.busy || S.lastRx > capStart) return;
+        clearTimeout(S.busyTimer); S.busy = false; S.mode = 'idle'; setLed('red'); updateStartBtn();
+        scanStatus('ไม่ได้รับข้อมูลจากเครื่อง\nตรวจว่าอัปเดตเฟิร์มแวร์แล้ว', 'ไม่ได้รับข้อมูลจากเครื่อง ตรวจว่าอัปเดตเฟิร์มแวร์แล้ว', 'err');
+        S.ref = false;
+      }, 30000);
+      return;
+    }
+    if (S.esp32){
+      // ESP32 ส่งพารามิเตอร์ให้ ADuCM355 เอง เราสั่งผ่าน UsbCommandHandler.h
+      for (const [k, id] of [['CUST','inCust'],['LOT','inLot'],['NAME','inName']]){
+        const v = $(id).value.trim(); if (v){ await send(`${k}:${v}`); await sleep(40); }
+      }
+      await send('SEN:' + senIdx); await sleep(40);
+      S.pending = {isRef, idx:senIdx};
+      await send(isRef ? 'REF:' + senIdx : 'START_MEASURE');
+      clearTimeout(S.awaitTimer);
+      S.awaitTimer = setTimeout(()=>{
+        if (!S.busy || S.mode === 'scan') return;
+        S.busy = false; S.pending = null; updateStartBtn();
+        scanStatus('เครื่องไม่ตอบรับคำสั่ง\nอัปเดตเฟิร์มแวร์ หรือกด START ที่ตัวเครื่อง', 'เครื่องไม่ตอบรับคำสั่ง อัปเดตเฟิร์มแวร์ หรือกด REF ที่ตัวเครื่อง', 'warn');
+        S.ref = false;
+      }, 25000);
+      return;
+    }
+    const sc = cfg.scan;
+    let ack = 0;
+    for (let attempt=1; attempt<=PARAM_SEND_MAX_TRY; attempt++){
+      if (attempt>1) log('sys',`ชิปไม่ตอบ -> ส่งพารามิเตอร์ใหม่ครั้งที่ ${attempt}/${PARAM_SEND_MAX_TRY}`);
+      S.mode='drain';
+      await send(''); await sleep(30);
+      // อ่านทิ้งจนสายเงียบ 250 ms (สูงสุด 3 วินาที)
+      const t0 = performance.now(); S.lastRx = Math.max(S.lastRx, t0);
+      while (performance.now()-S.lastRx < 250 && performance.now()-t0 < 3000) await sleep(10);
+      S.ackCount = 0; S.mode='ack';
+      await send('Vf'+Math.round(sc.vf)); await sleep(80);
+      await send('Vi'+Math.round(sc.vi)); await sleep(80);
+      await send('SH'+Number(sc.sh).toFixed(3)); await sleep(80);
+      await send('F'+Number(sc.f).toFixed(1)); await sleep(80);
+      await send('A'+Math.round(sc.a)); await sleep(80);
+      await send('G'+cfg.g); await sleep(80);
+      const d = performance.now()+PARAM_ACK_TIMEOUT_MS;
+      while (S.ackCount<PARAM_ACK_EXPECTED && performance.now()<d) await sleep(10);
+      ack = S.ackCount;
+      if (ack>0) break;
+    }
+    if (ack===0){
+      S.mode='idle'; S.busy=false; setLed('red'); updateStartBtn();
+      log('sys','ADuCM355 ไม่ตอบหลังลองครบ '+PARAM_SEND_MAX_TRY+' ครั้ง');
+      scanStatus('ADuCM355 ไม่ตอบสนอง\nลองใหม่อีกครั้ง','ADuCM355 ไม่ตอบสนอง ลองกด REF ใหม่','err');
+      S.ref=false; return;
+    }
+    log('sys', ack>=PARAM_ACK_EXPECTED ? `ได้ OK ครบ ${ack} บรรทัด` : `ได้ OK ${ack}/${PARAM_ACK_EXPECTED} บรรทัด สั่งสแกนต่อ`);
+    S.mode='idle';
+    await sleep(300);
+    beginCapture(isRef, senIdx);
+    await send('0');
+  }catch(e){
+    S.mode='idle'; S.busy=false; updateStartBtn(); setLed('red');
+    scanStatus('ส่งคำสั่งไม่สำเร็จ\n'+e.message, 'ส่งคำสั่งไม่สำเร็จ: '+e.message, 'err');
+    S.ref=false;
+  }
+}
+
+/* =====================================================================
+ * Scan done
+ * ===================================================================*/
+function scanDone(){
+  clearTimeout(S.doneTimer); S.doneTimer = null; clearTimeout(S.noDataTimer);
+  setLed('');
+  clearTimeout(S.busyTimer);
+  S.busy=false; S.mode='idle';
+  const wasRef = S.ref;
+  if (wasRef){
+    if (S.refValue != null || S.maxV > -1e8){
+      const v = S.refValue != null ? S.refValue : S.maxV;   // ใช้ค่าที่เครื่องบันทึกจริงถ้ามี
+      cfg.r[S.refIdx] = v; saveCfg();
+      fillSettings(true);
+      setStatus7(`${SENSORS[S.refIdx]} I0 = ${v.toFixed(4)}  บันทึกแล้ว`,'ok');
+      log('sys',`[REF] I0_per_sensor[${S.refIdx}] = ${v.toFixed(4)}`);
+    } else setStatus7('ไม่ได้รับข้อมูลในรอบ REF','err');
+    S.ref=false;
+  } else {
+    S.imLast = S.maxV > -1e8 ? S.maxV : 0;
+    S.hasResult = true;
+    S.resultPoints = S.points.slice();
+    refreshReadout();
+    autoSave();
+  }
+  updateStartBtn(); scheduleLive();
+}
+
+/* =====================================================================
+ * Concentration & PASS/FAIL
+ * ===================================================================*/
+function calcConc(Im, idx){ const m=cfg.m[idx]; if (!m) return 0; return ((Im - cfg.r[idx]) - cfg.i[idx]) / m; }
+const passFail = c => c < cfg.p ? 'PASS' : 'FAIL';
+
+function refreshReadout(){
+  const idx = $('inSensor').selectedIndex;
+  $('concSensor').textContent = SENSORS[idx];
+  $('kvI0').textContent = cfg.r[idx].toFixed(4);
+  $('kvIref').textContent = fmtG(cfg.i[idx]);
+  $('kvM').textContent = fmtG(cfg.m[idx]);
+  $('kvTh').textContent = '< '+fmtG(cfg.p)+' ppb';
+  $('kvIm').textContent = S.hasResult ? S.imLast.toFixed(4) : '–';
+  const c = calcConc(S.imLast, idx);
+  $('concVal').textContent = c.toFixed(1);
+  if (S.hasResult && !S.busy) showVerdict(passFail(c));
+}
+function hideVerdict(){ const v=$('verdict'); v.className='verdict empty'; v.textContent=S.busy?'กำลังวัด…':'ยังไม่มีผลการวัด'; }
+function showVerdict(r){ const v=$('verdict'); v.className='verdict '+(r==='PASS'?'pass':'fail'); v.textContent=r==='PASS'?'PASS':'FAIL'; }
+
+/* =====================================================================
+ * Save (เหมือน save_data_to_sd + uploadFileToDrive)
+ * ===================================================================*/
+const pad = n => String(n).padStart(2,'0');
+function buildContent(meta, points){
+  const header =
+    `Date : ${meta.date}\tTime : ${meta.time}\n`+
+    `Customer : ${meta.cust}\tLot. No. : ${meta.lot}\tSample Name : ${meta.name}\n`+
+    `Sensor : ${meta.sensor}\tConc.(ppm) : ${meta.conc.toFixed(3)}\tResult : ${meta.result}\n`+
+    `Mode : SWV\tVmax(mV) : ${meta.vmax}\tVmin(mV) : ${meta.vmin}\n`+
+    `F(Hz) : ${Number(meta.f).toFixed(1)}\tStep(mV) : ${Number(meta.sh).toFixed(3)}\tMod A(mV) : ${meta.a}\n`+
+    `Gain(K) : ${meta.gain}\tN(Steps) : ${meta.n}\n\n`;
+  return header + 'E(mV)\tI(uA)\n' + points.map(p=>`${p.e.toFixed(1)}\t${p.i.toFixed(4)}`).join('\n') + (points.length?'\n':'');
+}
+const safeName = s => s.replace(/[\\/:*?"<>|]/g,'-');
+
+async function autoSave(){
+  if (!S.resultPoints || !S.resultPoints.length){ setStatus4('ไม่มีข้อมูลให้บันทึก','err'); return; }
+  setStatus4('กำลังบันทึก…','busy');
+  const now = new Date();
+  const date = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+  const time = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const idx = S.sensorAtScan;
+  const cust = $('inCust').value.trim() || 'Customer';
+  const lot  = $('inLot').value.trim()  || 'Lot. NO.';
+  const name = $('inName').value.trim() || 'Sample Name';
+  const conc = calcConc(S.imLast, idx);
+  const sc = cfg.scan;
+  const n = Math.min(5000, Math.max(2, Math.round(Math.abs(sc.vf - sc.store)/(sc.sh>0.001?sc.sh:1))+1));
+  const meta = {date,time,cust,lot,name,sensor:SENSORS[idx],conc,result:passFail(conc),vmax:sc.vf,vmin:sc.store,f:sc.f,sh:sc.sh,a:sc.a,gain:gainLabel(cfg.g),n};
+  const content = buildContent(meta, S.resultPoints);
+
+  // ชื่อไฟล์: /YYYYMMDD/HHMM_Customer_Lot_Sample_Sensor.csv  (ซ้ำ -> ต่อท้าย (n))
+  const suffix = `_${cust}_${lot}_${name}_${meta.sensor}`;
+  let maxDup = -1;
+  for (const r of records){
+    if (r.folder!==date) continue;
+    const stem = r.file.replace(/\.csv$/,''); const pos = stem.indexOf(suffix); if (pos<0) continue;
+    const after = stem.slice(pos+suffix.length);
+    if (after==='') maxDup = Math.max(maxDup,0);
+    else { const mm = after.match(/^ \((\d+)\)$/); if (mm) maxDup = Math.max(maxDup, +mm[1]); }
+  }
+  const file = safeName(`${time}${suffix}${maxDup>=0?` (${maxDup+1})`:''}.csv`);
+  const rec = {id:Date.now().toString(36), folder:date, file, content, cust, lot, name, sensor:meta.sensor, conc:meta.conc.toFixed(3), result:meta.result, drive:false};
+
+  records.unshift(rec);
+  let localOk = saveRecords();
+  if (!localOk){ records.shift(); }
+  S.lastSaved = localOk ? rec : null;
+  if (cfg.autoDl) downloadText(file, content);
+
+  let driveOk = null;
+  if (cfg.autoDrive && cfg.driveUrl){
+    setStatus4('กำลังอัปโหลด Google Drive…','busy');
+    driveOk = await uploadToDrive(`${date}/${file}`, content);
+    if (driveOk && localOk){ rec.drive = true; saveRecords(); }
+  }
+  const lines = [localOk ? 'บันทึกในเครื่องแล้ว' : 'บันทึกในเบราว์เซอร์ไม่สำเร็จ (พื้นที่เต็ม)'];
+  if (driveOk!==null) lines.push(driveOk ? 'Google Drive สำเร็จ' : 'Google Drive ไม่สำเร็จ');
+  const tone = localOk && driveOk!==false ? 'ok' : (localOk || driveOk) ? 'warn' : 'err';
+  setStatus4(lines.join('\n'), tone);
+  renderFolders();
+}
+
+async function uploadToDrive(filename, content){
+  const url = (cfg.driveUrl||'').trim();
+  if (!url){ toast('ยังไม่ได้ตั้งค่า Google Apps Script URL'); return false; }
+  for (let attempt=1; attempt<=2; attempt++){
+    try{
+      log('sys',`[Drive] อัปโหลด ${filename} ครั้งที่ ${attempt}`);
+      // Apps Script ไม่ส่ง CORS header จึงใช้ no-cors (ส่งได้แต่ตรวจคำตอบไม่ได้)
+      await fetch(url+'?filename='+encodeURIComponent(filename), {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:content});
+      log('sys','[Drive] ส่งข้อมูลแล้ว');
+      return true;
+    }catch(e){ log('sys','[Drive] ล้มเหลว: '+e.message); if (attempt<2) await sleep(1000); }
+  }
+  return false;
+}
+
+function downloadText(name, text, type='text/csv'){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text],{type:type+';charset=utf-8'}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* =====================================================================
+ * NF_default.cfg  (m[..] i[..] G[..] R[..] P[..])
+ * ===================================================================*/
+function cfgFindBlock(text, key){
+  let from = 0;
+  for(;;){
+    const lb = text.indexOf('[',from); if (lb<0) return null;
+    const rb = text.indexOf(']',lb+1); if (rb<0) return null;
+    let k = lb-1; while (k>=0 && /\s/.test(text[k])) k--;
+    if (k>=0 && text[k].toLowerCase()===key) return text.slice(lb+1,rb);
+    from = rb+1;
+  }
+}
+const cfgParseList = body => body.split(',').map(s=>s.trim()).filter(Boolean).map(parseFloat).filter(v=>isFinite(v));
+function applyCfgText(text){
+  let applied = false; let b;
+  const fill = (arr, vals) => { vals.slice(0,5).forEach((v,i)=>arr[i]=v); return vals.length>0; };
+  if ((b=cfgFindBlock(text,'m'))!==null && fill(cfg.m, cfgParseList(b))) applied=true;
+  if (((b=cfgFindBlock(text,'i'))!==null || (b=cfgFindBlock(text,'c'))!==null) && fill(cfg.i, cfgParseList(b))) applied=true;
+  if ((b=cfgFindBlock(text,'r'))!==null && fill(cfg.r, cfgParseList(b))) applied=true;
+  if ((b=cfgFindBlock(text,'p'))!==null){ const v=cfgParseList(b)[0]; if (v>0){ cfg.p=v; applied=true; } }
+  return applied;
+}
+const cfgText = () => `m[${cfg.m.map(fmtG).join(',')}]\ni[${cfg.i.map(fmtG).join(',')}]\nG[${cfg.g}]\nR[${cfg.r.map(fmtG).join(',')}]\nP[${fmtG(cfg.p)}]\n`;
+
+/* =====================================================================
+ * Chart (canvas)
+ * ===================================================================*/
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function niceStep(range, target){ const raw=range/target; const p=Math.pow(10,Math.floor(Math.log10(raw))); const f=raw/p; return (f<1.5?1:f<3?2:f<7?5:10)*p; }
+
+function drawChart(canvas, points, opt={}){
+  const dpr = window.devicePixelRatio||1;
+  const W = canvas.clientWidth, H = canvas.clientHeight; if (!W||!H) return null;
+  if (canvas.width!==Math.round(W*dpr) || canvas.height!==Math.round(H*dpr)){ canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr); }
+  const ctx = canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const font = cssVar('--font'); const ink2=cssVar('--ink-2'), grid=cssVar('--grid'), line=cssVar('--line'), trace=cssVar('--trace'), peak=cssVar('--peak');
+  const L=58, R=16, T=14, B=40; const pw=W-L-R, ph=H-T-B;
+  let x0 = opt.xmin, x1 = opt.xmax;
+  if (x0==null||x1==null){ if (points.length){ x0=Math.min(...points.map(p=>p.e)); x1=Math.max(...points.map(p=>p.e)); } else { x0=-400; x1=800; } }
+  if (x1<=x0) x1=x0+1;
+  let ymax = points.length ? Math.max(...points.map(p=>p.i)) : 1; ymax = Math.max(ymax*1.15, 0.5);
+  const ys = niceStep(ymax,5); ymax = Math.ceil(ymax/ys)*ys;
+  const X = e => L + (e-x0)/(x1-x0)*pw, Y = i => T + ph - (i/ymax)*ph;
+
+  ctx.font = `12px ${font}`; ctx.lineWidth=1;
+  // grid Y
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for (let v=0; v<=ymax+1e-9; v+=ys){ const y=Math.round(Y(v))+.5; ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke(); ctx.fillStyle=ink2; ctx.fillText(+v.toPrecision(4)+'',L-8,y); }
+  // grid X
+  const xs = niceStep(x1-x0, Math.max(3,Math.floor(pw/90)));
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for (let v=Math.ceil(x0/xs)*xs; v<=x1+1e-9; v+=xs){ const x=Math.round(X(v))+.5; ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+ph); ctx.stroke(); ctx.fillStyle=ink2; ctx.fillText(String(Math.round(v)).replace('-','−'),x,T+ph+6); }
+  ctx.strokeStyle=line; ctx.strokeRect(L+.5,T+.5,pw,ph);
+  ctx.fillStyle=ink2; ctx.textAlign='right'; ctx.textBaseline='bottom'; ctx.fillText('E (mV)',L+pw,H-2);
+  ctx.save(); ctx.translate(14,T+ph/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('I (µA)',0,0); ctx.restore();
+
+  if (!points.length){
+    ctx.fillStyle=ink2; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`14px ${font}`;
+    ctx.fillText(opt.empty||'ยังไม่มีข้อมูล', L+pw/2, T+ph/2); return {X,Y,x0,x1,points};
+  }
+  ctx.save(); ctx.beginPath(); ctx.rect(L,T,pw,ph); ctx.clip();
+  ctx.strokeStyle=trace; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.beginPath();
+  points.forEach((p,k)=>{ const x=X(p.e), y=Y(p.i); k?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+  // peak
+  let pk = points[0]; for (const p of points) if (p.i>pk.i) pk=p;
+  const px=X(pk.e), py=Y(pk.i);
+  ctx.strokeStyle=peak; ctx.setLineDash([4,4]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(px,T+ph); ctx.lineTo(px,py); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle=peak; ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle=peak; ctx.font=`600 12px ${font}`; ctx.textBaseline='bottom';
+  const label = `Imax ${pk.i.toFixed(4)} µA @ ${pk.e.toFixed(0)} mV`;
+  ctx.textAlign = px > L+pw*0.6 ? 'right' : 'left';
+  ctx.fillText(label, px + (ctx.textAlign==='left'?8:-8), Math.max(T+14, py-6));
+  return {X,Y,x0,x1,points};
+}
+
+function attachTip(canvas, tip, getGeom){
+  canvas.addEventListener('pointermove', ev=>{
+    const g = getGeom(); if (!g || !g.points.length){ tip.style.display='none'; return; }
+    const r = canvas.getBoundingClientRect(); const mx = ev.clientX-r.left;
+    let best=null, bd=1e9; for (const p of g.points){ const d=Math.abs(g.X(p.e)-mx); if (d<bd){bd=d;best=p;} }
+    if (!best || bd>20){ tip.style.display='none'; return; }
+    tip.style.display='block'; tip.style.left=g.X(best.e)+'px'; tip.style.top=g.Y(best.i)+'px';
+    tip.textContent = `${best.e.toFixed(1)} mV, ${best.i.toFixed(4)} µA`;
+  });
+  canvas.addEventListener('pointerleave', ()=>tip.style.display='none');
+}
+
+let liveGeom=null, liveQueued=false;
+function scheduleLive(){ if (liveQueued) return; liveQueued=true; requestAnimationFrame(()=>{ liveQueued=false; renderLive(); }); }
+function renderLive(){
+  const pts = S.busy ? S.points : (S.resultPoints||S.points);
+  liveGeom = drawChart($('liveChart'), pts, {xmin:cfg.scan.store, xmax:cfg.scan.vf, empty: S.busy ? 'รอข้อมูลจาก ADuCM355…' : 'กด START เพื่อเริ่มวัด'});
+  $('liveCount').textContent = `${pts.length} จุด`;
+  $('liveRange').textContent = `SWV ${String(cfg.scan.store).replace('-','−')} ถึง ${cfg.scan.vf} mV  ${gainLabel(cfg.g)}`;
+  if (S.busy && S.maxV>-1e8) $('kvIm').textContent = S.maxV.toFixed(4);
+}
+attachTip($('liveChart'), $('liveTip'), ()=>liveGeom);
+
+/* =====================================================================
+ * UI wiring
+ * ===================================================================*/
+function setStatus(el, msg, tone){ el.textContent=msg; el.className='status'+(tone?' tone-'+tone:''); }
+const setStatus4 = (m,t)=>setStatus($('status4'),m,t);
+const setStatus7 = (m,t)=>setStatus($('status7'),m,t);
+function setLed(c){ $('led').className='led'+(c?' '+c:''); }
+function updateStartBtn(){
+  const b=$('btnStart'); b.disabled = !S.tr || S.busy;
+  b.textContent = S.busy ? (S.ref ? 'กำลังวัด REF…' : 'กำลังวัด…') : 'START';
+  document.querySelectorAll('[data-ref]').forEach(x=>x.disabled = !S.tr || S.busy);
+  if (S.busy && !S.ref) hideVerdict();
+}
+
+function setConnected(tr){
+  if (!tr && S.tr){ S.tr=null; }
+  S.tr = tr;
+  if (!tr){ clearTimeout(S.busyTimer); clearTimeout(S.awaitTimer); clearTimeout(S.doneTimer); clearTimeout(S.noDataTimer); S.busy=false; S.mode='idle'; S.esp32=false; S.pending=null; S.usbDrive=false; renderUsbDrive(); setLed(''); }
+  $('connDot').classList.toggle('on', !!tr);
+  $('connText').textContent = tr ? tr.label : 'ยังไม่เชื่อมต่อ';
+  ['btnSerial','btnBle','btnDemo'].forEach(id=>$(id).hidden=!!tr);
+  $('btnDisconnect').hidden = !tr;
+  updateStartBtn();
+  if (tr) setStatus4(tr.kind==='ble' ? 'เชื่อมต่อเครื่องแล้ว กด START หรือกดวัดที่ตัวเครื่อง' : 'พร้อมวัด กด START', 'ok');
+  else setStatus4('เชื่อมต่อเครื่องก่อน แล้วกด START','');
+}
+
+async function connectWith(Cls){
+  const tr = new Cls(handlers);
+  try{
+    await tr.connect(); setConnected(tr); log('sys','เชื่อมต่อแล้ว: '+tr.label);
+    if (tr.kind==='ble'){ try{ await send('START_UPLOAD'); }catch(e){} }
+    // ถามเครื่องทันที: ถ้าเป็น ESP32 (MT Sense) จะตอบ "[USB RX Command] PING" -> เข้าโหมดเครื่อง MT Sense ทันที
+    if (tr.kind==='serial'){ setTimeout(()=>{ if (S.tr===tr && !S.esp32) send('PING').catch(()=>{}); }, 400); }
+  }catch(e){
+    if (e.name==='NotFoundError') return; // ผู้ใช้กดยกเลิก
+    const blocked = e.name==='SecurityError' || /permission|policy|allowed/i.test(e.message);
+    toast(blocked ? 'หน้านี้ไม่ได้รับสิทธิ์เข้าถึงอุปกรณ์ ให้เปิดไฟล์ HTML นี้โดยตรงด้วย Chrome หรือ Edge' : 'เชื่อมต่อไม่สำเร็จ: '+e.message);
+    log('sys','เชื่อมต่อไม่สำเร็จ: '+e.message);
+  }
+}
+$('btnSerial').onclick = ()=> 'serial' in navigator ? connectWith(SerialTransport) : toast('เบราว์เซอร์นี้ไม่รองรับ Web Serial ใช้ Chrome หรือ Edge บนคอมพิวเตอร์');
+$('btnBle').onclick    = ()=> 'bluetooth' in navigator ? connectWith(BleTransport) : toast('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth ใช้ Chrome หรือ Edge');
+$('btnDemo').onclick   = ()=> connectWith(DemoTransport);
+$('btnDisconnect').onclick = async ()=>{
+  const tr = S.tr; if (!tr) return;
+  if (tr.kind==='ble'){ try{ await send('STOP_UPLOAD'); }catch(e){} }
+  await tr.disconnect(); setConnected(null); log('sys','ตัดการเชื่อมต่อแล้ว');
+};
+$('btnStart').onclick = ()=> startScan(false, $('inSensor').selectedIndex);
+
+// Sensor dropdown
+SENSORS.forEach(s=>{ const o=document.createElement('option'); o.textContent=s; $('inSensor').appendChild(o); });
+$('inSensor').onchange = ()=>{
+  const idx = $('inSensor').selectedIndex;
+  store.set('mts.sensor', idx); if (!S.busy) S.sensorAtScan = idx; refreshReadout();
+  if (S.esp32 && !S.busy) send('SEN:' + idx).catch(()=>{});
+};
+// เปลี่ยน Sensor หลังวัดเสร็จ -> คำนวณใหม่ด้วย m/I ของ Sensor ที่เลือก (เหมือน Sen_dropdown_event_cb)
+
+// Sample fields persist
+const sample = store.get('mts.sample',{});
+['inCust','inLot','inName'].forEach(id=>{ $(id).value = sample[id]||''; $(id).oninput=()=>{ sample[id]=$(id).value; store.set('mts.sample',sample); }; });
+$('inSensor').selectedIndex = store.get('mts.sensor',0);
+
+/* ---------- Settings view ---------- */
+for (let g=0; g<=26; g++){ const o=document.createElement('option'); o.value=g; o.textContent=gainLabel(g)+(g===GAIN_DEFAULT?' (ค่าเริ่มต้น)':''); $('inGain').appendChild(o); }
+const tbody = $('senRows');
+SENSORS.forEach((s,k)=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><b>${s}</b></td><td><input data-m="${k}" inputmode="decimal"></td><td><input data-i="${k}" inputmode="decimal"></td><td class="num" data-r="${k}">0.0000</td><td><button class="btn small" data-ref="${k}" disabled>REF</button></td>`;
+  tbody.appendChild(tr);
+});
+tbody.addEventListener('click', ev=>{ const b=ev.target.closest('[data-ref]'); if (b) startScan(true, +b.dataset.ref); });
+
+function fillSettings(onlyR){
+  SENSORS.forEach((_,k)=>{
+    tbody.querySelector(`[data-r="${k}"]`).textContent = cfg.r[k].toFixed(4);
+    if (onlyR) return;
+    tbody.querySelector(`[data-m="${k}"]`).value = fmtG(cfg.m[k]);
+    tbody.querySelector(`[data-i="${k}"]`).value = fmtG(cfg.i[k]);
+  });
+  if (onlyR){ refreshReadout(); return; }
+  $('inPass').value = fmtG(cfg.p); $('inGain').value = cfg.g;
+  const sc=cfg.scan; $('inVf').value=sc.vf; $('inVi').value=sc.vi; $('inStore').value=sc.store; $('inSH').value=sc.sh; $('inF').value=sc.f; $('inA').value=sc.a;
+  $('inDevId').value=cfg.deviceId; $('inDrive').value=cfg.driveUrl; $('inAutoDrive').checked=cfg.autoDrive; $('inAutoDl').checked=cfg.autoDl; $('inTheme').value=cfg.theme||'';
+  $('brandId').textContent = cfg.deviceId;
+  refreshReadout(); scheduleLive();
+}
+
+const strictNum = s => { s=String(s).trim(); if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) return NaN; return parseFloat(s); };
+$('btnCfgSave').onclick = ()=>{
+  document.querySelectorAll('#view-setup .bad').forEach(x=>x.classList.remove('bad'));
+  const m=[], c=[];
+  for (let k=0;k<5;k++){
+    const im = tbody.querySelector(`[data-m="${k}"]`), ic = tbody.querySelector(`[data-i="${k}"]`);
+    m[k]=strictNum(im.value); if (!isFinite(m[k]) || m[k]===0){ im.classList.add('bad'); im.focus(); setStatus7(`ค่า m ของ ${SENSORS[k]} ไม่ถูกต้อง (ต้องเป็นตัวเลขและไม่เป็น 0)`,'err'); return; }
+    c[k]=strictNum(ic.value); if (!isFinite(c[k])){ ic.classList.add('bad'); ic.focus(); setStatus7(`ค่า I ของ ${SENSORS[k]} ไม่ถูกต้อง`,'err'); return; }
+  }
+  const p = strictNum($('inPass').value); if (!(p>0)){ $('inPass').classList.add('bad'); setStatus7('เกณฑ์ผ่านต้องมากกว่า 0','err'); return; }
+  const sc = {vf:strictNum($('inVf').value), vi:strictNum($('inVi').value), store:strictNum($('inStore').value), sh:strictNum($('inSH').value), f:strictNum($('inF').value), a:strictNum($('inA').value)};
+  for (const [k,id] of [['vf','inVf'],['vi','inVi'],['store','inStore'],['sh','inSH'],['f','inF'],['a','inA']]){
+    if (!isFinite(sc[k]) || ((k==='sh'||k==='f') && sc[k]<=0)){ $(id).classList.add('bad'); setStatus7('พารามิเตอร์การสแกนไม่ถูกต้อง','err'); return; }
+  }
+  if (!(sc.vf>sc.store && sc.store>=sc.vi)){ setStatus7('ต้องเป็น Vi ≤ จุดเริ่มเก็บข้อมูล < Vf','err'); return; }
+  cfg.m=m; cfg.i=c; cfg.p=p; cfg.g=+$('inGain').value; cfg.scan=sc;
+  cfg.deviceId = $('inDevId').value.trim()||'MT_ID01'; cfg.driveUrl=$('inDrive').value.trim();
+  cfg.autoDrive=$('inAutoDrive').checked; cfg.autoDl=$('inAutoDl').checked; cfg.theme=$('inTheme').value;
+  if (!saveCfg()){ setStatus7('บันทึกไม่สำเร็จ','err'); return; }
+  applyTheme(); fillSettings(); setStatus7('บันทึกค่าแล้ว','ok');
+};
+$('btnCfgCancel').onclick = ()=>{ fillSettings(); setStatus7('คืนค่าที่บันทึกไว้แล้ว',''); };
+$('btnScanDefault').onclick = ()=>{ const s=SCAN_DEFAULT; $('inVf').value=s.vf; $('inVi').value=s.vi; $('inStore').value=s.store; $('inSH').value=s.sh; $('inF').value=s.f; $('inA').value=s.a; $('inGain').value=GAIN_DEFAULT; setStatus7('กด “บันทึกค่า” เพื่อใช้ค่าเริ่มต้น',''); };
+$('btnCfgExport').onclick = ()=> downloadText('NF_default.cfg', cfgText(), 'text/plain');
+$('cfgFile').onchange = async ev=>{
+  const f = ev.target.files[0]; if (!f) return;
+  const text = (await f.text()).slice(0,1024);
+  if (applyCfgText(text)){ saveCfg(); fillSettings(); setStatus7('นำเข้า '+f.name+' แล้ว','ok'); }
+  else setStatus7('ไม่พบบล็อก m[ ] i[ ] R[ ] P[ ] ในไฟล์','err');
+  ev.target.value='';
+};
+function applyTheme(){ if (cfg.theme) document.documentElement.dataset.theme=cfg.theme; else delete document.documentElement.dataset.theme; scheduleLive(); renderRecChart(); }
+
+/* ---------- Records view ---------- */
+let selRec = null, recGeom = null;
+function parseCsv(text){
+  const info = {}; const pts = []; let inData=false;
+  for (const raw of text.split('\n')){
+    const line = raw.replace('\r','');
+    if (inData){ const [e,i] = line.split(/[\t,]/).map(parseFloat); if (isFinite(e)&&isFinite(i)) pts.push({e,i:Math.abs(i)}); continue; }
+    if (line.startsWith('E(mV)')){ inData=true; continue; }
+    for (const seg of line.split('\t')){ const ci=seg.indexOf(':'); if (ci<0) continue; info[seg.slice(0,ci).trim()] = seg.slice(ci+1).trim(); }
+  }
+  return {info, pts};
+}
+function renderFolders(){
+  const sel = $('selFolder'); const cur = sel.value;
+  const folders = [...new Set(records.map(r=>r.folder))].sort().reverse();
+  sel.innerHTML = '';
+  if (!folders.length){ const o=document.createElement('option'); o.textContent='ยังไม่มีข้อมูล'; o.value=''; sel.appendChild(o); }
+  folders.forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent = /^\d{8}$/.test(f) ? `${f.slice(6,8)}/${f.slice(4,6)}/${f.slice(0,4)}` : f; sel.appendChild(o); });
+  if (folders.includes(cur)) sel.value=cur;
+  renderFiles();
+}
+function renderFiles(){
+  const ul = $('fileList'); ul.innerHTML='';
+  const list = records.filter(r=>r.folder===$('selFolder').value);
+  if (!list.length){ const li=document.createElement('li'); li.innerHTML='<button disabled class="muted">ไม่มีไฟล์ CSV ในโฟลเดอร์นี้</button>'; ul.appendChild(li); }
+  list.forEach(r=>{
+    const li=document.createElement('li'); const b=document.createElement('button');
+    b.setAttribute('aria-pressed', selRec&&selRec.id===r.id ? 'true':'false');
+    b.textContent = r.file;
+    if (r.result){ const t=document.createElement('span'); t.className='tag '+(r.result.toUpperCase()==='PASS'?'pass':'fail'); t.textContent=r.result; b.appendChild(t); }
+    b.onclick = ()=>{ selRec=r; renderFiles(); showRecord(); };
+    li.appendChild(b); ul.appendChild(li);
+  });
+}
+function showRecord(){
+  const r = selRec; const dl = $('recInfo'); dl.innerHTML='';
+  ['btnRecDl','btnRecDrive','btnRecDel'].forEach(id=>$(id).disabled=!r);
+  setStatus($('statusRec'),'','');
+  if (!r){ $('recTitle').textContent='รายละเอียดข้อมูล'; renderRecChart(); return; }
+  const {info} = parseCsv(r.content);
+  $('recTitle').textContent = r.file;
+  const rows = [['ลูกค้า',info['Customer']],['Lot No.',info['Lot. No.']],['ชื่อตัวอย่าง',info['Sample Name']],['Sensor',info['Sensor']],['Conc.(ppm)',info['Conc.(ppm)']],['ผลการวัด',info['Result']],['วันที่',info['Date']],['เวลา',info['Time']],['Gain',info['Gain(K)']]];
+  rows.forEach(([k,v])=>{ const d=document.createElement('div'); d.innerHTML=`<dt></dt><dd></dd>`; d.firstChild.textContent=k; d.lastChild.textContent=v||'–';
+    if (k==='ผลการวัด' && v) d.lastChild.style.color = v.toUpperCase()==='PASS' ? 'var(--pass)' : 'var(--fail)'; dl.appendChild(d); });
+  if (r.drive) setStatus($('statusRec'),'อัปโหลด Google Drive แล้ว','ok');
+  renderRecChart();
+}
+function renderRecChart(){ const pts = selRec ? parseCsv(selRec.content).pts : []; recGeom = drawChart($('recChart'), pts, {empty:'เลือกไฟล์ทางซ้ายเพื่อดูกราฟ'}); }
+attachTip($('recChart'), $('recTip'), ()=>recGeom);
+$('selFolder').onchange = ()=>{ selRec=null; renderFiles(); showRecord(); };
+$('btnRecDl').onclick = ()=> selRec && downloadText(selRec.file, selRec.content);
+$('btnRecDrive').onclick = async ()=>{
+  if (!selRec) return; setStatus($('statusRec'),'กำลังอัปโหลด…','busy');
+  const ok = await uploadToDrive(`${selRec.folder}/${selRec.file}`, selRec.content);
+  if (ok){ selRec.drive=true; saveRecords(); }
+  setStatus($('statusRec'), ok?'อัปโหลด Google Drive แล้ว':'อัปโหลดไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตและ URL', ok?'ok':'err');
+};
+$('btnRecDel').onclick = ()=>{
+  if (!selRec || !confirm(`ลบไฟล์ ${selRec.file} ?`)) return;
+  records = records.filter(r=>r!==selRec); saveRecords(); selRec=null; renderFolders(); showRecord();
+};
+$('csvFiles').onchange = async ev=>{
+  let n=0, last=null;
+  for (const f of ev.target.files){
+    const text = await f.text(); const {info} = parseCsv(text);
+    const folder = /^\d{6,8}$/.test(info['Date']||'') ? info['Date'] : 'นำเข้า';
+    const rec = {id:Date.now().toString(36)+n, folder, file:f.name, content:text, sensor:info['Sensor'], conc:info['Conc.(ppm)'], result:info['Result']||'', drive:false};
+    records.unshift(rec); n++; last=rec;
+  }
+  if (!saveRecords()) toast('พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็ม บางไฟล์อาจไม่ถูกเก็บถาวร');
+  renderFolders(); if (last){ $('selFolder').value=last.folder; selRec=last; renderFiles(); showRecord(); }
+  ev.target.value=''; toast(`เปิด ${n} ไฟล์แล้ว`);
+};
+
+/* ---------- Log view ---------- */
+$('btnLogClear').onclick = ()=>{ logLines.length=0; logEl.innerHTML=''; };
+$('btnUsbDrive').onclick = ()=>{ if (S.tr) send(S.usbDrive ? 'USB_DRIVE:0' : 'USB_DRIVE:1').catch(e=>toast(e.message)); };
+$('btnLogDl').onclick = ()=> downloadText('mt-sense-log.txt', logLines.join('\n'), 'text/plain');
+
+/* ---------- Routing ---------- */
+const VIEWS = ['measure','setup','records','log'];
+function route(){
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'measure';
+  VIEWS.forEach(x=>$('view-'+x).hidden = x!==v);
+  document.querySelectorAll('.tabs a').forEach(a=> a.dataset.view===v ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
+  if (v==='measure') scheduleLive();
+  if (v==='records') renderRecChart();
+  if (v==='log') logEl.scrollTop = logEl.scrollHeight;
+}
+window.addEventListener('hashchange', route);
+
+/* ---------- Clock ---------- */
+function tick(){ const d=new Date(); $('clock').textContent = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+setInterval(tick,1000); tick();
+
+window.addEventListener('resize', ()=>{ scheduleLive(); renderRecChart(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', ()=>{ scheduleLive(); renderRecChart(); });
+window.addEventListener('beforeunload', ()=>{ try{ S.tr?.disconnect(); }catch(e){} });
+
+applyTheme(); fillSettings(); renderFolders(); showRecord(); route(); updateStartBtn();
+log('sys','MT Sense web app พร้อมใช้งาน');
+
+/* ---------- PWA: ติดตั้งเป็นแอปบนมือถือ / ใช้งานออฟไลน์ ---------- */
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(e=>log('sys','Service worker: '+e.message)); });
+}
+</script>
+</body>
+</html>
